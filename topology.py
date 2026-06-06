@@ -1,12 +1,13 @@
 from itertools import combinations
 import numpy as np
 from scipy.spatial.distance import cdist
+from linear_algebra import reduce_matrix_mod2
 
 # S - simplex, SC - simplicial complex, C - specific complexes, BD - boundary matrix
 TESTING_S = False
 TESTING_SC = False
 TESTING_C = False
-TESTING_BD = False
+TESTING_BD = True
 
 
 class Simplex:
@@ -105,6 +106,8 @@ class SimplicialComplex:
     
     def boundary_matrix(self, k):
         """ n x m matrix """
+        if k <= 0 or k > self.dim():
+            return 0
         cols = self.k_simplices(k)
         m = len(cols)
         rows = self.k_simplices(k-1)
@@ -134,6 +137,15 @@ class SimplicialComplex:
                 return False
         return True
 
+    def betti_number(self, k):
+        bd_0 = self.boundary_matrix(k)
+        rank_0 = reduce_matrix_mod2(bd_0)[1]
+        bd_1 = self.boundary_matrix(k+1)
+        rank_1 = reduce_matrix_mod2(bd_1)[1]
+        n_0 = len(self.k_simplices(k))
+
+        return n_0 - rank_0 - rank_1
+        
     def __repr__(self):
         return f"{self.simplices}"
     
@@ -225,6 +237,8 @@ if __name__ == "__main__":
         bd_matrix_2 = complex.boundary_matrix(2)
         bd_matrix_1 = complex.boundary_matrix(1)
         print(complex.verify_boundary_property())
+        print(complex.betti_number(0))
+
         # other_triangle = Simplex([1,2,3])
         # complex.add_simplex(other_triangle)
         # print(complex.boundary_matrix(2))
