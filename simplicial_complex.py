@@ -2,10 +2,11 @@ from itertools import combinations
 import numpy as np
 from scipy.spatial.distance import cdist
 
-# S - simplex, SC - simplicial complex, C - specific complexes
+# S - simplex, SC - simplicial complex, C - specific complexes, BD - boundary matrix
 TESTING_S = False
 TESTING_SC = False
-TESTING_C = True
+TESTING_C = False
+TESTING_BD = False
 
 
 class Simplex:
@@ -30,6 +31,15 @@ class Simplex:
     def faces(self):
         v = self.vertices
         return [Simplex(combo) for r in range(1, len(v) + 1) for combo in combinations(v, r)]
+    
+    def boundary(self):
+        faces = self.faces()
+        target = self.dim() - 1
+        bd = []
+        for face in faces:
+            if target == face.dim():
+                bd.append(face)
+        return bd
     
     def __eq__(self, other):
         return self.vertices == other.vertices
@@ -68,10 +78,13 @@ class SimplicialComplex:
                 self.by_dim[key] = set()
             self.by_dim[key].add(face)
                 
-
     def add_simplices(self, list_of_simplices):
         for simplex in list_of_simplices:
             self.add_simplex(simplex)
+
+    def k_simplices(self, k):
+        simplices_set = self.by_dim[k].copy()
+        return sorted(simplices_set, key=lambda s: s.vertices)
 
     def dim(self):
         return max(self.by_dim.keys()) if self.by_dim else 0
@@ -90,6 +103,37 @@ class SimplicialComplex:
             skeleton_set.update(self.by_dim[i])
         return skeleton_set
     
+    def boundary_matrix(self, k):
+        """ n x m matrix """
+        cols = self.k_simplices(k)
+        m = len(cols)
+        rows = self.k_simplices(k-1)
+        n = len(rows)
+
+        bd_matrix = np.zeros((n,m), dtype=int)
+        row_index = {simplex: i for i, simplex in enumerate(rows)}
+        col_index = {simplex: j for j, simplex in enumerate(cols)}
+        for col in cols:
+            j = col_index[col]
+
+            bd = col.boundary()
+            for simplex in bd:
+                i = row_index[simplex]
+                bd_matrix[i,j] = 1
+        return bd_matrix
+
+    def verify_boundary_property(self):
+        n = self.dim()
+        if n <= 1:
+            return True
+        
+        for i in range(1, n):
+            bd_0 = self.boundary_matrix(i)
+            bd_1 = self.boundary_matrix(i+1)
+            if not (((bd_0 @ bd_1) % 2) == 0).all():
+                return False
+        return True
+
     def __repr__(self):
         return f"{self.simplices}"
     
@@ -157,11 +201,10 @@ if __name__ == "__main__":
         my_simplex = Simplex(my_list)
         my_list_2 = [0,1]
         my_simplex_2 = Simplex(my_list_2)
+        print(my_simplex_2.boundary())
         simplex_list = [my_simplex, my_simplex_2]
         my_sc.add_simplices(simplex_list)
-        print(my_sc.dim())
-        print(my_sc.is_valid())
-        print(my_sc.skeleton(1))
+        print(my_sc.k_simplices(3))
 
 
     if TESTING_C:
@@ -175,8 +218,14 @@ if __name__ == "__main__":
         print(nerve.is_valid())
 
 
-
-
-
-        
+    if TESTING_BD:
+        triangle = Simplex([0,1,2])
+        complex = SimplicialComplex()
+        complex.add_simplex(triangle)
+        bd_matrix_2 = complex.boundary_matrix(2)
+        bd_matrix_1 = complex.boundary_matrix(1)
+        print(complex.verify_boundary_property())
+        # other_triangle = Simplex([1,2,3])
+        # complex.add_simplex(other_triangle)
+        # print(complex.boundary_matrix(2))
 
