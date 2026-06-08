@@ -238,8 +238,7 @@ if __name__ == "__main__":
         bd_matrix_1 = complex.boundary_matrix(1)
         print(complex.verify_boundary_property())
         print(complex.betti_number(0))
-
-        # other_triangle = Simplex([1,2,3])
-        # complex.add_simplex(other_triangle)
-        # print(complex.boundary_matrix(2))
+        other_triangle = Simplex([1,2,3])
+        complex.add_simplex(other_triangle)
+        print(complex.boundary_matrix(2))
 
